@@ -1,10 +1,14 @@
 import { useRef, useState } from "react";
 import Header from "./Header";
 import validateFormData from "../utils/validate";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../utils/firebase";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [isSignIn, setIsSignin] = useState(true);
   const [formValidationMessage, setFormValidationMessage] = useState(null);
+  const navigate = useNavigate();
 
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
@@ -14,9 +18,48 @@ const Login = () => {
   };
 
   const handleFormData = () => {
-    const message = validateFormData(emailRef.current.value, passwordRef.current.value);
+    const message = validateFormData(
+      emailRef.current.value,
+      passwordRef.current.value
+    );
     setFormValidationMessage(message);
-  }
+
+    if (!isSignIn) {
+      createUserWithEmailAndPassword(
+        auth,
+        emailRef.current.value,
+        passwordRef.current.value
+      )
+        .then((userCredential) => {
+          // Signed up
+          const user = userCredential.user;
+          console.log(user);
+          navigate("/")
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          setFormValidationMessage(errorCode + "-" + errorMessage);
+        });
+    } else {
+      signInWithEmailAndPassword(
+        auth,
+        emailRef.current.value,
+        passwordRef.current.value
+      )
+        .then((userCredential) => {
+          // Signed in
+          const user = userCredential.user;
+          console.log(user);
+          navigate("/browse")
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          setFormValidationMessage(errorCode + "-" + errorMessage);
+        });
+    }
+  };
 
   return (
     <div>
@@ -29,7 +72,10 @@ const Login = () => {
         />{" "}
       </div>
       <div>
-        <form onSubmit={(e) => e.preventDefault()} className="absolute bg-black bg-opacity-90 w-3/12 p-12 my-24 mx-auto right-0 left-0 text-white rounded-lg">
+        <form
+          onSubmit={(e) => e.preventDefault()}
+          className="absolute bg-black bg-opacity-90 w-3/12 p-12 my-24 mx-auto right-0 left-0 text-white rounded-lg"
+        >
           <h1 className="font-semibold text-3xl">
             {isSignIn ? "Sign In" : "Sign Up"}
           </h1>
@@ -53,7 +99,10 @@ const Login = () => {
             className="w-full p-3 my-4 bg-[#333333] rounded-lg focus:outline-none"
           />
           <p className="text-red-600 font-semibold">{formValidationMessage}</p>
-          <button className="w-full p-3 my-6 bg-red-700 rounded-lg" onClick={handleFormData}>
+          <button
+            className="w-full p-3 my-6 bg-red-700 rounded-lg"
+            onClick={handleFormData}
+          >
             Sign In
           </button>
           <div className="w-full flex justify-between text-gray-400 text-[13px]">
